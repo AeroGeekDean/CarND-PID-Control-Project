@@ -22,7 +22,7 @@ public:
   double output_limit;  // output will be capped at [+/-] of this value
   double int_err_limit;  // Integrator path will be limited at this fraction of total output.
                          // This prevents integrator "wind-up" issue.
-  bool int_saturated;
+  bool isIntegratorSaturated;
 
   /*
   * Constructor

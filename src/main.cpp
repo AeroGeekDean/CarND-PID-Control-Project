@@ -44,10 +44,10 @@ int main()
   // TODO: Initialize the pid variable.
   double steer_kp = 1.0;
   double steer_ki = 0.1;
-  double steer_kd = 0.1;
+  double steer_kd = 0.5;
 
   double cruise_kp = 0.1;
-  double cruise_ki = 0.002*13.0; // kp*frame_rate
+  double cruise_ki = 0.02; // kp*frame_rate
   double cruise_kd = 0.0;
 
   steering_controller.Init(steer_kp, steer_ki, steer_kd);
@@ -100,14 +100,16 @@ int main()
 //          steer_value = 0.0;
 
           // Computer throttle
-          double cruise_set_spd = 10.0;
+          double cruise_set_spd = 20.0;
           cruise_controller.UpdateError(dt, -(cruise_set_spd - speed));
           throttle = cruise_controller.TotalError();
 
           // DEBUG
 //          std::cout << "CTE: " << cte << " Steering Value: " << steer_value << std::endl;
           std::cout << "Hz " << 1./dt << "   |    Speed: " << speed << " Throttle: " << throttle
-                    << " CTE: " << cte << " Steering: " << steer_value << std::endl;
+                    << " CTE: " << cte << " Steering: " << steer_value
+                    << ((steering_controller.isIntegratorSaturated) ? " i-Saturated!!" : "")
+                    << std::endl;
 
           json msgJson;
           msgJson["steering_angle"] = steer_value;

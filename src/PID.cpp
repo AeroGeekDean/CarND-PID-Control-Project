@@ -39,12 +39,19 @@ void PID::UpdateError(double dt, double cte) {
 
   // limit the integrator error.
   if (i_error > int_err_limit)
-    i_error = int_err_limit; int_saturated = true;
+  {
+    i_error = int_err_limit;
+    isIntegratorSaturated = true;
+  }
   else if (i_error < -int_err_limit)
-    i_error = -int_err_limit; int_saturated = true;
+  {
+    i_error = -int_err_limit;
+    isIntegratorSaturated = true;
+  }
   else
-    int_saturated = false;
-
+  {
+    isIntegratorSaturated = false;
+  }
 }
 
 double PID::TotalError() {
