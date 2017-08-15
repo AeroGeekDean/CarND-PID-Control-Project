@@ -1,14 +1,13 @@
 #include "PID.h"
 
-//using namespace std;
+//using namespace std; // poor coding practice!
 
 /*
 * TODO: Complete the PID class.
 */
 
 PID::PID() {
-  output_limit = INF;
-  int_err_limit = INF;
+  ResetLimits();
 }
 
 PID::~PID() {
@@ -21,9 +20,14 @@ void PID::Init(double Kp, double Ki, double Kd) {
   this->Kd = Kd;
 }
 
-void PID::SetLimits(double output_lim, double int_lim) {
+void PID::SetLimits(double output_lim, double int_auth_lim) {
   this->output_limit = output_lim;
-  this->int_err_limit = output_lim*int_lim/Ki; // back calc limit for i_error
+  this->int_err_limit = output_lim*int_auth_lim/Ki; // back calc limit for i_error
+}
+
+void PID::ResetLimits() {
+  output_limit = INF;
+  int_err_limit = INF;
 }
 
 void PID::Reset(double cte) {
@@ -37,7 +41,8 @@ void PID::UpdateError(double dt, double cte) {
   i_error += cte*dt;
   p_error = cte;
 
-  // limit the integrator error.
+  // Limit the integrator error to prevent windup.
+  // See here: https://en.wikipedia.org/wiki/Integral_windup
   if (i_error > int_err_limit)
   {
     i_error = int_err_limit;

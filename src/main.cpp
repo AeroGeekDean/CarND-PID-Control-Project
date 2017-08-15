@@ -3,7 +3,8 @@
 #include "json.hpp"
 #include "PID.h"
 #include <math.h>
-#include <chrono>
+#include <chrono> // for time calc
+#include <fstream> // for data log file
 
 // for convenience
 using json = nlohmann::json;
@@ -14,9 +15,20 @@ constexpr double pi() { return M_PI; }
 double deg2rad(double x) { return x * pi() / 180; }
 double rad2deg(double x) { return x * 180 / pi(); }
 
-// For keeping track of time to compute dt
+//-----------------------------------------------------
+// For keeping track of time to compute dt between data messages
 steady_clock::time_point time_past;
 duration<double> delta_t;
+/*
+ * Even tho we could pass the criteria for this project without using dt.
+ * It is very poor practice to design a controller without it.
+ * See my discussion here:
+ * https://discussions.udacity.com/t/some-questions-about-pid-project/315927/12
+ */
+//-----------------------------------------------------
+
+// data log file
+std::ofstream datalog;
 
 // Checks if the SocketIO event has JSON data.
 // If there is data the JSON object in string format will be returned,
@@ -43,8 +55,8 @@ int main()
 
   // TODO: Initialize the pid variable.
   double steer_kp = 1.0;
-  double steer_ki = 0.1;
-  double steer_kd = 0.5;
+  double steer_ki = 0.3;
+  double steer_kd = 0.35;
 
   double cruise_kp = 0.1;
   double cruise_ki = 0.02; // kp*frame_rate
@@ -97,19 +109,31 @@ int main()
           // Compute steering
           steering_controller.UpdateError(dt, cte);
           steer_value = steering_controller.TotalError();
-//          steer_value = 0.0;
+//          steer_value = 0.0; // for testing
 
           // Computer throttle
-          double cruise_set_spd = 20.0;
+          double cruise_set_spd = 20.0;  // Cruise control set speed, [mph]
           cruise_controller.UpdateError(dt, -(cruise_set_spd - speed));
           throttle = cruise_controller.TotalError();
 
-          // DEBUG
+          // DEBUG cout
 //          std::cout << "CTE: " << cte << " Steering Value: " << steer_value << std::endl;
           std::cout << "Hz " << 1./dt << "   |    Speed: " << speed << " Throttle: " << throttle
                     << " CTE: " << cte << " Steering: " << steer_value
                     << ((steering_controller.isIntegratorSaturated) ? " i-Saturated!!" : "")
                     << std::endl;
+
+          // write data log file
+          if (datalog.is_open())
+          {
+            datalog << dt << ", "
+                    << speed << ", "
+                    << throttle << ", "
+                    << cte << ", "
+                    << steer_value << ", "
+                    << ((steering_controller.isIntegratorSaturated) ? "1" : "0")
+                    << std::endl;
+          }
 
           json msgJson;
           msgJson["steering_angle"] = steer_value;
@@ -144,10 +168,16 @@ int main()
 
   h.onConnection([&h](uWS::WebSocket<uWS::SERVER> ws, uWS::HttpRequest req) {
     std::cout << "Connected!!!" << std::endl;
+    datalog.open("data_log.txt", std::ios::trunc);
+    if (datalog.is_open())
+    {
+      datalog << "dt, speed, throttle, cte, steer, isSat" << std::endl;
+    }
   });
 
   h.onDisconnection([&h](uWS::WebSocket<uWS::SERVER> ws, int code, char *message, size_t length) {
     ws.close();
+    datalog.close();
     std::cout << "Disconnected" << std::endl;
   });
 
